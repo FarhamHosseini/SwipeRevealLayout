@@ -21,6 +21,7 @@ android {
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
   }
+
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_1_8
     targetCompatibility JavaVersion.VERSION_1_8
@@ -33,3 +34,11 @@ dependencies {
   implementation 'org.jetbrains:annotations:21.0.1'
 
 }
+
+ext {
+  PUBLISH_GROUP_ID = 'com.apachat'
+  PUBLISH_VERSION = '1.1.2'
+  PUBLISH_ARTIFACT_ID = 'swipereveallayout-android'
+}
+
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
