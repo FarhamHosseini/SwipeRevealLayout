@@ -9,14 +9,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class ViewBinder {
   private static final String BUNDLE_MAP_KEY = "ViewBinder_BUNDLE_MAP_KEY";
 
   private Map<String, Integer> mapStates = Collections.synchronizedMap(new HashMap<String, Integer>());
-  private Map<String, SwipeLayout> mapLayouts = Collections.synchronizedMap(new HashMap<String, SwipeLayout>());
-  private Set<String> lockedSwipeSet = Collections.synchronizedSet(new HashSet<String>());
+  private final Map<String, SwipeLayout> mapLayouts = Collections.synchronizedMap(new HashMap<String, SwipeLayout>());
+  private final Set<String> lockedSwipeSet = Collections.synchronizedSet(new HashSet<String>());
 
   private volatile boolean openOnlyOne = false;
   private final Object stateChangeLock = new Object();
@@ -107,7 +108,7 @@ public class ViewBinder {
 
       if (mapLayouts.containsKey(id)) {
         final SwipeLayout layout = mapLayouts.get(id);
-        layout.open(true);
+        Objects.requireNonNull(layout).open(true);
       } else if (openOnlyOne) {
         closeOthers(id, mapLayouts.get(id));
       }
@@ -120,14 +121,13 @@ public class ViewBinder {
 
       if (mapLayouts.containsKey(id)) {
         final SwipeLayout layout = mapLayouts.get(id);
-        layout.close(true);
+        Objects.requireNonNull(layout).close(true);
       }
     }
   }
 
   private void closeOthers(String id, SwipeLayout swipeLayout) {
     synchronized (stateChangeLock) {
-      // close other rows if openOnlyOne is true.
       if (getOpenCount() > 1) {
         for (Map.Entry<String, Integer> entry : mapStates.entrySet()) {
           if (!entry.getKey().equals(id)) {

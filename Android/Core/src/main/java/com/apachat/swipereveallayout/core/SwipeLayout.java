@@ -1,5 +1,6 @@
 package com.apachat.swipereveallayout.core;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -17,6 +18,8 @@ import androidx.customview.widget.ViewDragHelper;
 
 import com.apachat.swipereveallayout.core.interfaces.DragStateChanged;
 import com.apachat.swipereveallayout.core.interfaces.Swipe;
+
+import org.jetbrains.annotations.NotNull;
 
 public class SwipeLayout extends ViewGroup {
   protected static final int STATE_CLOSE = 0;
@@ -41,13 +44,13 @@ public class SwipeLayout extends ViewGroup {
 
   private View mSecondaryView;
 
-  private Rect mRectMainClose = new Rect();
+  private final Rect mRectMainClose = new Rect();
 
-  private Rect mRectMainOpen = new Rect();
+  private final Rect mRectMainOpen = new Rect();
 
-  private Rect mRectSecClose = new Rect();
+  private final Rect mRectSecClose = new Rect();
 
-  private Rect mRectSecOpen = new Rect();
+  private final Rect mRectSecOpen = new Rect();
 
   private int mMinDistRequestDisallowParent = 0;
 
@@ -91,6 +94,7 @@ public class SwipeLayout extends ViewGroup {
     super(context, attrs, defStyleAttr);
   }
 
+  @SuppressLint("ClickableViewAccessibility")
   @Override
   public boolean onTouchEvent(MotionEvent event) {
     mGestureDetector.onTouchEvent(event);
@@ -149,16 +153,13 @@ public class SwipeLayout extends ViewGroup {
       int measuredChildHeight = child.getMeasuredHeight();
       int measuredChildWidth = child.getMeasuredWidth();
 
-      // need to take account if child size is match_parent
       final LayoutParams childParams = child.getLayoutParams();
       boolean matchParentHeight = false;
       boolean matchParentWidth = false;
 
       if (childParams != null) {
-        matchParentHeight = (childParams.height == LayoutParams.MATCH_PARENT) ||
-          (childParams.height == LayoutParams.FILL_PARENT);
-        matchParentWidth = (childParams.width == LayoutParams.MATCH_PARENT) ||
-          (childParams.width == LayoutParams.FILL_PARENT);
+        matchParentHeight = (childParams.height == LayoutParams.FILL_PARENT);
+        matchParentWidth = (childParams.width == LayoutParams.FILL_PARENT);
       }
 
       if (matchParentHeight) {
@@ -179,14 +180,8 @@ public class SwipeLayout extends ViewGroup {
           bottom = Math.min(measuredChildHeight + getPaddingTop(), maxBottom);
           break;
 
-        case DRAG_EDGE_LEFT:
-          left = Math.min(getPaddingLeft(), maxRight);
-          top = Math.min(getPaddingTop(), maxBottom);
-          right = Math.min(measuredChildWidth + getPaddingLeft(), maxRight);
-          bottom = Math.min(measuredChildHeight + getPaddingTop(), maxBottom);
-          break;
-
         case DRAG_EDGE_TOP:
+        case DRAG_EDGE_LEFT:
           left = Math.min(getPaddingLeft(), maxRight);
           top = Math.min(getPaddingTop(), maxBottom);
           right = Math.min(measuredChildWidth + getPaddingLeft(), maxRight);
@@ -294,7 +289,7 @@ public class SwipeLayout extends ViewGroup {
       }
 
       if (widthMode == MeasureSpec.AT_MOST) {
-        desiredWidth = (desiredWidth > measuredWidth) ? measuredWidth : desiredWidth;
+        desiredWidth = Math.min(desiredWidth, measuredWidth);
       }
     }
 
@@ -306,7 +301,7 @@ public class SwipeLayout extends ViewGroup {
       }
 
       if (heightMode == MeasureSpec.AT_MOST) {
-        desiredHeight = (desiredHeight > measuredHeight) ? measuredHeight : desiredHeight;
+        desiredHeight = Math.min(desiredHeight, measuredHeight);
       }
     }
 
@@ -686,7 +681,7 @@ public class SwipeLayout extends ViewGroup {
 
   private final ViewDragHelper.Callback mDragHelperCallback = new ViewDragHelper.Callback() {
     @Override
-    public boolean tryCaptureView(View child, int pointerId) {
+    public boolean tryCaptureView(@NotNull View child, int pointerId) {
       mAborted = false;
 
       if (mLockDrag)
@@ -697,7 +692,7 @@ public class SwipeLayout extends ViewGroup {
     }
 
     @Override
-    public int clampViewPositionVertical(View child, int top, int dy) {
+    public int clampViewPositionVertical(@NotNull View child, int top, int dy) {
       switch (mDragEdge) {
         case DRAG_EDGE_TOP:
           return Math.max(
@@ -717,7 +712,7 @@ public class SwipeLayout extends ViewGroup {
     }
 
     @Override
-    public int clampViewPositionHorizontal(View child, int left, int dx) {
+    public int clampViewPositionHorizontal(@NotNull View child, int left, int dx) {
       switch (mDragEdge) {
         case DRAG_EDGE_RIGHT:
           return Math.max(
@@ -737,7 +732,7 @@ public class SwipeLayout extends ViewGroup {
     }
 
     @Override
-    public void onViewReleased(View releasedChild, float xvel, float yvel) {
+    public void onViewReleased(@NotNull View releasedChild, float xvel, float yvel) {
       final boolean velRightExceeded = pxToDp((int) xvel) >= mMinFlingVelocity;
       final boolean velLeftExceeded = pxToDp((int) xvel) <= -mMinFlingVelocity;
       final boolean velUpExceeded = pxToDp((int) yvel) <= -mMinFlingVelocity;
@@ -831,7 +826,7 @@ public class SwipeLayout extends ViewGroup {
     }
 
     @Override
-    public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
+    public void onViewPositionChanged(@NotNull View changedView, int left, int top, int dx, int dy) {
       super.onViewPositionChanged(changedView, left, top, dx, dy);
       if (mMode == MODE_SAME_LEVEL) {
         if (mDragEdge == DRAG_EDGE_LEFT || mDragEdge == DRAG_EDGE_RIGHT) {
@@ -887,8 +882,6 @@ public class SwipeLayout extends ViewGroup {
           break;
 
         case ViewDragHelper.STATE_IDLE:
-
-          // drag edge is left or right
           if (mDragEdge == DRAG_EDGE_LEFT || mDragEdge == DRAG_EDGE_RIGHT) {
             if (mMainView.getLeft() == mRectMainClose.left) {
               mState = STATE_CLOSE;
@@ -897,7 +890,6 @@ public class SwipeLayout extends ViewGroup {
             }
           }
 
-          // drag edge is top or bottom
           else {
             if (mMainView.getTop() == mRectMainClose.top) {
               mState = STATE_CLOSE;
